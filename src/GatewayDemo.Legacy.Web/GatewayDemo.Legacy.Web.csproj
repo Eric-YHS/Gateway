@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>10.0.0</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{E449502E-8F27-433E-851B-2A5BA7EA4521}</ProjectGuid>
+    <ProjectTypeGuids>{349C5851-65DF-11DA-9384-00065B846F21};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <OutputType>Library</OutputType>
+    <RootNamespace>GatewayDemo.Legacy.Web</RootNamespace>
+    <AssemblyName>GatewayDemo.Legacy.Web</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <CodePage>65001</CodePage>
+    <UseIISExpress>true</UseIISExpress>
+    <IISExpressSSLPort />
+    <IISExpressAnonymousAuthentication>enabled</IISExpressAnonymousAuthentication>
+    <IISExpressWindowsAuthentication>disabled</IISExpressWindowsAuthentication>
+    <IISExpressUseClassicPipelineMode>false</IISExpressUseClassicPipelineMode>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">16.0</VisualStudioVersion>
+    <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Security" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Web.ApplicationServices" />
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.SQLite">
+      <HintPath>..\..\packages\Stub.System.Data.SQLite.Core.NetFramework.1.0.118.0\lib\net46\System.Data.SQLite.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="App_Start\RouteConfig.cs" />
+    <Compile Include="Global.asax.cs">
+      <DependentUpon>Global.asax</DependentUpon>
+    </Compile>
+    <Compile Include="Infrastructure\AdminPasswordHasher.cs" />
+    <Compile Include="Infrastructure\BrowserDeviceService.cs" />
+    <Compile Include="Infrastructure\ClientIpResolver.cs" />
+    <Compile Include="Infrastructure\DeviceCredentialException.cs" />
+    <Compile Include="Infrastructure\DeviceCredentialService.cs" />
+    <Compile Include="Infrastructure\GatewayDatabaseInitializer.cs" />
+    <Compile Include="Infrastructure\GatewayPageRenderer.cs" />
+    <Compile Include="Infrastructure\GatewayPathCandidateBuilder.cs" />
+    <Compile Include="Infrastructure\GatewayPathUtility.cs" />
+    <Compile Include="Infrastructure\GatewayPublicUrlContext.cs" />
+    <Compile Include="Infrastructure\GatewayTargetStore.cs" />
+    <Compile Include="Infrastructure\GatewayRequestContext.cs" />
+    <Compile Include="Infrastructure\LegacyGatewayConfiguration.cs" />
+    <Compile Include="Infrastructure\LegacyAppAccessRequestDraft.cs" />
+    <Compile Include="Infrastructure\LegacyAppAccessRequestFactory.cs" />
+    <Compile Include="Infrastructure\LegacyAppCompatibilityPolicy.cs" />
+    <Compile Include="Infrastructure\LegacyAppIdentityPolicy.cs" />
+    <Compile Include="Infrastructure\LegacyAppResponseWriter.cs" />
+    <Compile Include="Infrastructure\LegacyReviewMergePolicy.cs" />
+    <Compile Include="Infrastructure\LegacyGatewayRepository.cs" />
+    <Compile Include="Infrastructure\LegacyGatewayRuntime.cs" />
+    <Compile Include="Infrastructure\ManagedReverseProxy.cs" />
+    <Compile Include="Infrastructure\MobileClientDetector.cs" />
+    <Compile Include="Infrastructure\AppRequestDiagnostic.cs" />
+    <Compile Include="Infrastructure\ProxyRequestModule.cs" />
+    <Compile Include="Infrastructure\SQLiteConnectionConfigurator.cs" />
+    <Compile Include="Handlers\Healthz.ashx.cs">
+      <DependentUpon>Healthz.ashx</DependentUpon>
+    </Compile>
+    <Compile Include="Admin\Default.aspx.cs">
+      <DependentUpon>Default.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Gateway\Default.aspx.cs">
+      <DependentUpon>Default.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Global.asax" />
+    <Content Include="Web.config" />
+    <Content Include="App_Data\gateway-sites.json" />
+    <Content Include="Handlers\Healthz.ashx" />
+    <Content Include="Admin\Default.aspx" />
+    <Content Include="Gateway\Default.aspx" />
+    <Content Include="Gateway\errors\blocked.html" />
+    <Content Include="..\..\packages\Stub.System.Data.SQLite.Core.NetFramework.1.0.118.0\build\net46\x64\SQLite.Interop.dll">
+      <Link>x64\SQLite.Interop.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\packages\Stub.System.Data.SQLite.Core.NetFramework.1.0.118.0\build\net46\x86\SQLite.Interop.dll">
+      <Link>x86\SQLite.Interop.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\GatewayDemo.Legacy.Core\GatewayDemo.Legacy.Core.csproj">
+      <Project>{BEB2D722-F3B4-4AC9-9F04-F5666D439C63}</Project>
+      <Name>GatewayDemo.Legacy.Core</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets" Condition="Exists('$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets')" />
+</Project>
