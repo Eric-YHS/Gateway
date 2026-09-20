@@ -1,0 +1,46 @@
+services:
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5050:8080"
+      - "127.0.0.1:5051:8081"
+    environment:
+      ASPNETCORE_URLS: http://+:8080;http://+:8081
+      Storage__Provider: Sqlite
+      Storage__SqliteConnectionString: Data Source=/data/gateway-demo.db
+      DataProtection__ApplicationName: GatewayDemo
+      DataProtection__KeyRingPath: /keys
+      Admin__ManagementPort: 8081
+      Gateway__Sites__0__UpstreamBaseUrl: http://mock-backend:8080/mock/erp-main/
+      Gateway__Sites__1__UpstreamBaseUrl: http://mock-backend:8080/mock/wms-east/
+      Gateway__Sites__2__UpstreamBaseUrl: http://mock-backend:8080/mock/finance/
+    volumes:
+      - gateway-data:/data
+      - gateway-keyring:/keys
+    depends_on:
+      - mock-backend
+    networks:
+      - edge
+      - backend
+
+  mock-backend:
+    build:
+      context: .
+      dockerfile: src/MockBusinessBackend/Dockerfile
+    expose:
+      - "8080"
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+    networks:
+      - backend
+
+volumes:
+  gateway-data:
+  gateway-keyring:
+
+networks:
+  edge:
+  backend:
+    internal: true

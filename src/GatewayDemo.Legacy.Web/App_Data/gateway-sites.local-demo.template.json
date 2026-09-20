@@ -1,0 +1,15 @@
+[
+  {
+    "Key": "2027",
+    "Name": "ERP 主站",
+    "Description": "本地业务演示站点。",
+    "Accent": "#0f766e",
+    "UpstreamBaseUrl": "{{DemoBaseUrl}}",
+    "EntryPath": "default.aspx",
+    "ExposeLegacyAppAtRoot": true,
+    "PathRuleProfiles": [
+      "legacy-web-default",
+      "jvs-default"
+    ]
+  }
+]

@@ -1,0 +1,5 @@
+Add-WebConfigurationProperty -Filter /system.webServer/handlers -Name . -Value @{name='PageHandlerFactory-Integrated-4.0';path='*.aspx';verb='GET,HEAD,POST,DEBUG';type='System.Web.UI.PageHandlerFactory';preCondition='integratedMode,runtimeVersionv4.0'} -PSPath IIS:\
+Add-WebConfigurationProperty -Filter /system.webServer/handlers -Name . -Value @{name='SimpleHandlerFactory-Integrated-4.0';path='*.ashx';verb='GET,HEAD,POST,DEBUG';type='System.Web.UI.SimpleHandlerFactory';preCondition='integratedMode,runtimeVersionv4.0'} -PSPath IIS:\
+Add-WebConfigurationProperty -Filter /system.webServer/handlers -Name . -Value @{name='WebServiceHandlerFactory-Integrated-4.0';path='*.asmx';verb='GET,HEAD,POST,DEBUG';type='System.Web.Services.Protocols.WebServiceHandlerFactory';preCondition='integratedMode,runtimeVersionv4.0'} -PSPath IIS:\
+Add-WebConfigurationProperty -Filter /system.webServer/handlers -Name . -Value @{name='AssemblyResourceLoader-Integrated-4.0';path='WebResource.axd';verb='GET,DEBUG';type='System.Web.Handlers.AssemblyResourceLoader';preCondition='integratedMode,runtimeVersionv4.0'} -PSPath IIS:\
+Write-Host "ASP.NET handlers registered."

@@ -1,0 +1,1 @@
+SELECT TOP 5 * FROM COMMON_SystemVariable

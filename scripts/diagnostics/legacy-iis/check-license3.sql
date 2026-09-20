@@ -1,0 +1,1 @@
+SELECT * FROM COMMON_License

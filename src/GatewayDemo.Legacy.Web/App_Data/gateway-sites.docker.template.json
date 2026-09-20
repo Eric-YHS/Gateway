@@ -1,0 +1,37 @@
+[
+  {
+    "Key": "erp-main",
+    "Name": "ERP 主站（本地演示站）",
+    "Description": "ERP 业务站点。",
+    "Accent": "#0f766e",
+    "UpstreamBaseUrl": "{{DemoBaseUrl}}",
+    "EntryPath": "default.aspx",
+    "ExposeLegacyAppAtRoot": true,
+    "PathRuleProfiles": [
+      "legacy-web-default",
+      "jvs-default"
+    ]
+  },
+  {
+    "Key": "wms-east",
+    "Name": "WMS 东仓",
+    "Description": "仓储业务站点。",
+    "Accent": "#b45309",
+    "UpstreamBaseUrl": "http://mock-backend/mock/wms-east/",
+    "EntryPath": "portal",
+    "PathRuleProfiles": [
+      "legacy-web-default"
+    ]
+  },
+  {
+    "Key": "finance",
+    "Name": "财务共享",
+    "Description": "财务业务站点。",
+    "Accent": "#1d4ed8",
+    "UpstreamBaseUrl": "http://mock-backend/mock/finance/",
+    "EntryPath": "portal",
+    "PathRuleProfiles": [
+      "legacy-web-default"
+    ]
+  }
+]

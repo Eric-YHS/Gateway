@@ -1,0 +1,62 @@
+- generic [ref=e2] [box=0,0,563,1708]:
+  - generic [ref=e3] [box=24,24,515,99]:
+    - heading "统一认证访问网关" [level=1] [ref=e5] [box=24,24,515,46]
+    - generic [ref=e6] [box=24,92,515,32]:
+      - generic [ref=e7] [box=24,92,68,32]: 需要复核
+      - generic [ref=e8] [box=102,92,134,32]: 目标站点：ERP Main
+  - generic [ref=e9] [box=24,141,515,674]:
+    - heading "当前设备" [level=2] [ref=e10] [box=46,163,471,35]
+    - generic [ref=e11] [box=46,218,471,484]:
+      - generic [ref=e12] [box=46,218,471,70]:
+        - generic [ref=e13] [box=59,231,445,18]: 设备编号
+        - strong [ref=e14] [box=59,255,445,21]: DEV-260628-8DB28A
+      - generic [ref=e15] [box=46,301,471,70]:
+        - generic [ref=e16] [box=59,313,445,18]: 设备标识
+        - strong [ref=e17] [box=59,337,445,21]: 9928aee8e017411a91d04eaca9cd7351
+      - generic [ref=e18] [box=46,383,471,72]:
+        - generic [ref=e19] [box=59,396,445,18]: 凭据类型
+        - strong [ref=e20] [box=59,419,445,23]: 浏览器 Cookie
+      - generic [ref=e21] [box=46,467,471,70]:
+        - generic [ref=e22] [box=59,480,445,18]: 环境指纹
+        - strong [ref=e23] [box=59,504,445,21]: f6238e6d49d9
+      - generic [ref=e24] [box=46,550,471,70]:
+        - generic [ref=e25] [box=59,563,445,18]: 访问 IP
+        - strong [ref=e26] [box=59,586,445,21]: ::1
+      - generic [ref=e27] [box=46,632,471,70]:
+        - generic [ref=e28] [box=59,645,445,18]: 目标路径
+        - strong [ref=e29] [box=59,669,445,21]: /portal
+    - generic [ref=e30] [box=46,717,471,76]:
+      - strong [ref=e31] [box=60,730,443,23]: 当前设备需要复核。
+      - generic [ref=e32] [box=60,757,443,23]: 设备尚未获批，请先提交访问申请。
+  - generic [ref=e33] [box=24,833,515,639]:
+    - heading "提交访问申请" [level=2] [ref=e34] [box=46,855,471,35]
+    - generic [ref=e35] [box=46,910,471,540]:
+      - generic [ref=e36] [box=46,910,471,298]:
+        - generic [ref=e37] [box=46,910,471,66]:
+          - generic [ref=e38] [box=46,910,471,19]: 企业名称
+          - textbox "企业名称" [ref=e39] [box=46,936,471,39]
+        - generic [ref=e40] [box=46,987,471,66]:
+          - generic [ref=e41] [box=46,987,471,19]: 申请人
+          - textbox "申请人" [ref=e42] [box=46,1014,471,39]
+        - generic [ref=e43] [box=46,1065,471,66]:
+          - generic [ref=e44] [box=46,1065,471,19]: 联系电话
+          - textbox "联系电话" [ref=e45] [box=46,1092,471,39]
+        - generic [ref=e46] [box=46,1142,471,66]:
+          - generic [ref=e47] [box=46,1142,471,19]: 申请原因
+          - textbox "申请原因" [ref=e48] [box=46,1169,471,39]
+      - generic [ref=e49] [box=46,1208,471,184]:
+        - paragraph [ref=e50] [box=46,1208,471,19]: 本次申请站点
+        - generic [ref=e51] [box=46,1235,471,158]:
+          - generic [ref=e52] [box=46,1235,471,74]:
+            - checkbox "所有站点" [ref=e53] [box=63,1252,13,13]
+            - generic [ref=e54] [box=59,1269,445,19]: 所有站点
+          - generic [ref=e55] [box=46,1320,471,72]:
+            - checkbox "ERP Main" [checked] [ref=e56] [box=63,1337,13,13]
+            - generic [ref=e57] [box=59,1354,445,17]: ERP Main
+      - button "提交申请" [ref=e59] [cursor=pointer] [box=46,1408,81,42]
+  - generic [ref=e60] [box=24,1490,515,176]:
+    - heading "受保护站点" [level=2] [ref=e61] [box=46,1512,471,35]
+    - list [ref=e62] [box=46,1567,471,77]:
+      - listitem [ref=e63] [box=46,1567,471,77]:
+        - strong [ref=e64] [box=61,1582,441,21]: ERP Main
+        - code [ref=e65] [box=61,1607,441,22]: http://localhost:34850/portal

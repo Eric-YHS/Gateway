@@ -1,0 +1,9 @@
+**/obj/
+**/*.pdb
+**/*.cs
+**/*.csproj
+**/*.sln
+**/*.user
+**/*.suo
+App_Data/gateway-demo-legacy.db
+App_Data/app-diagnostics.log

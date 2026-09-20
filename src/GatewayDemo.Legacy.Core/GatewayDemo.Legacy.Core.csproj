@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{BEB2D722-F3B4-4AC9-9F04-F5666D439C63}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>GatewayDemo.Legacy.Core</RootNamespace>
+    <AssemblyName>GatewayDemo.Legacy.Core</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <CodePage>65001</CodePage>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Models\DeviceContext.cs" />
+    <Compile Include="Models\GatewayAccessRequest.cs" />
+    <Compile Include="Models\GatewayAccessRequestSite.cs" />
+    <Compile Include="Models\GatewayAccessRequestStatus.cs" />
+    <Compile Include="Models\GatewayAppCredential.cs" />
+    <Compile Include="Models\GatewayAppReplayNonce.cs" />
+    <Compile Include="Models\GatewayAuditLog.cs" />
+    <Compile Include="Models\GatewayAuthorizationStatus.cs" />
+    <Compile Include="Models\GatewayBrowserCredential.cs" />
+    <Compile Include="Models\GatewayDeviceAuthorization.cs" />
+    <Compile Include="Models\GatewayDeviceAuthorizationSite.cs" />
+    <Compile Include="Models\GatewayDeviceTrustState.cs" />
+    <Compile Include="Models\GatewayManagedDevice.cs" />
+    <Compile Include="Models\GatewayWebViewHandoffTicket.cs" />
+    <Compile Include="Models\GatewayWebViewCredential.cs" />
+    <Compile Include="Options\AdminOptions.cs" />
+    <Compile Include="Options\ExternalApiClientOptions.cs" />
+    <Compile Include="Options\GatewayDataProtectionOptions.cs" />
+    <Compile Include="Options\GatewayOptions.cs" />
+    <Compile Include="Options\GatewayPathRuleProfileOptions.cs" />
+    <Compile Include="Options\GatewayPathRuleProfileCatalog.cs" />
+    <Compile Include="Options\GatewayPathRuleOptions.cs" />
+    <Compile Include="Options\GatewaySiteOptions.cs" />
+    <Compile Include="Options\LegacyAppProfileOptions.cs" />
+    <Compile Include="Options\LegacyAppTenantLookupOptions.cs" />
+    <Compile Include="Options\StorageOptions.cs" />
+    <Compile Include="Repositories\IGatewayRepository.cs" />
+    <Compile Include="Services\GatewayDashboardSnapshot.cs" />
+    <Compile Include="Services\IssuedAppCredential.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

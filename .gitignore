@@ -1,0 +1,97 @@
+# IDE / OS
+.DS_Store
+Thumbs.db
+.vs/
+.idea/
+
+# Build and dependency output
+node_modules/
+dist/
+**/bin/
+**/obj/
+**/__pycache__/
+*.pyc
+
+# Machine-local third-party toolchains (keep repository-owned helper scripts)
+/tools/7zip/
+/tools/android/
+/tools/hasp/
+/tools/iisexpress/
+/tools/jdk/
+
+# Local application state
+src/GatewayDemo/App_Data/
+src/GatewayDemo.Legacy.Web/App_Data/*.db
+src/GatewayDemo.Legacy.Web/App_Data/*.db-*
+src/GatewayDemo.Legacy.Web/App_Data/*.sqlite*
+
+# Generated verification and packaging output
+/.archive/
+/acceptance/
+/acceptance-runs/
+/agent-runtime/
+/analysis/
+/artifacts/
+/browser-test-output/
+/codex-home-test/
+/evidence/
+/inspect-archive/
+/inspection/
+/output/
+/test-results/
+/test-runs/
+/TestResults/
+/work/
+/work*/
+/_*/
+
+# Local agent and browser-tool state
+/.acceptance/
+/.agent-docs/
+/.agent-runtime/
+/.agent-security/
+/.audit/
+/.codex-*/
+/.playwright-cli/
+/.playwright-mcp/
+/.repro-zip/
+/.work/
+/.zcode/
+
+# Runtime evidence that should not return to the repository root
+/*.log
+/*.png
+/*.html
+/*.c2v
+/*.V2C
+/*.pfx
+/*.pid
+/admin-ai-pending.json
+/gateway_test_report*.json
+/realcheck-*.txt
+/temp*.txt
+/_current*.txt
+
+# Deliverable build staging; published reports remain visible
+deliverables/_staging/
+deliverables/_repro*/
+deliverables/**/*.zip
+deliverables/*.zip.*
+deliverables/*.bak*
+
+# 本机 QQ 聊天内容、图片和同步状态
+/聊天记录/
+聊天记录/config.local.json
+聊天记录/安装部署协同/
+聊天记录/raw/
+聊天记录/tools/*
+!聊天记录/tools/export_chat.py
+!聊天记录/tools/get_key_patched.ps1
+!聊天记录/tools/test_decrypt.py
+
+# 本机安装包（体积大且受第三方许可约束）
+/packages/sqlserver/
+
+# 本机协作/代理说明，不属于项目源码
+/AGENTS.md
+/CLAUDE_WORKFLOW.md

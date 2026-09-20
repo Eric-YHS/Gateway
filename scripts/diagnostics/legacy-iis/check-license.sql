@@ -1,0 +1,10 @@
+SELECT TOP 5 name FROM sys.tables
+WHERE name LIKE '%lic%'
+   OR name LIKE '%auth%'
+   OR name LIKE '%dog%'
+   OR name LIKE '%soft%'
+   OR name LIKE '%hasp%'
+   OR name LIKE '%key%'
+   OR name LIKE '%serial%'
+   OR name LIKE '%Common_License%'
+   OR name LIKE '%COMMON_License%'

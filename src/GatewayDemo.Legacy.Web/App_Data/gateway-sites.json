@@ -1,0 +1,52 @@
+[
+  {
+    "Key": "2027",
+    "Name": "ERP Main",
+    "Description": "ERP 业务系统",
+    "Accent": "#0f766e",
+    "UpstreamBaseUrl": "http://localhost:5055/mock/erp-main/",
+    "EntryPath": "portal",
+    "ExposeLegacyAppAtRoot": true,
+    "HostNames": [
+      "localhost:5050",
+      "localhost:5051"
+    ],
+    "AnonymousAllowedPaths": [
+      "/sys.ashx*",
+      "/ashx/sys.ashx*",
+      "/datacenter/*",
+      "/default.aspx/datacenter/*"
+    ],
+    "PathRuleProfiles": [
+      "legacy-web-default",
+      "jvs-default"
+    ],
+    "ExternalApiDefaultPathPatterns": [
+      "/api/*"
+    ],
+    "ExternalApiClients": [
+      {
+        "ClientId": "loopback-external-api",
+        "AllowedIpRanges": [
+          "127.0.0.1",
+          "::1"
+        ],
+        "AllowedSiteKeys": [
+          "2027"
+        ],
+        "AllowedPathPatterns": [
+          "/api/*",
+          "/mgr/*",
+          "/jvs-public/*",
+          "/proxy/2027/api/*",
+          "/proxy/2027/mgr/*",
+          "/proxy/2027/jvs-public/*"
+        ],
+        "Contact": "Operations",
+        "Description": "Server-to-server API allowlist. Add partner source IPs and allowed paths here; callers keep the original API URL shape through the gateway.",
+        "Enabled": true
+      }
+    ],
+    "RedirectToUpstream": false
+  }
+]

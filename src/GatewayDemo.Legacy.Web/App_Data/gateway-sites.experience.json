@@ -1,0 +1,14 @@
+[
+  {
+    "Key": "2027",
+    "Name": "ERP 主站",
+    "Description": "由网关统一接入控制的业务系统站点。",
+    "Accent": "#0f766e",
+    "UpstreamBaseUrl": "http://replace-with-erp-host/",
+    "EntryPath": "default.aspx",
+    "ExposeLegacyAppAtRoot": true,
+    "PathRuleProfiles": [
+      "legacy-web-default"
+    ]
+  }
+]

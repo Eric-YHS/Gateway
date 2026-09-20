@@ -1,0 +1,29 @@
+各位，网关这边已按群里本轮反馈完成修复和真实环境复测，更新包见附件。
+
+网关侧已处理并验证：
+1. SQLite 数据库删除后自动重建表结构。连续删除、重启两轮，13 张表均自动创建，申请页正常。
+2. 同一移动设备的完整登录、字段不完整的后续请求、再次登录会合并到同一设备和同一条待审核记录；已有姓名、账号、企业信息不会被残缺请求覆盖。
+3. 未授权页面的 JS/CSS 子资源不再 302 到申请 HTML，避免 “Unexpected token '<'”；授权后的 SPA、CSS、历史路由均可用。
+4. 客户端 IP 只按受信代理链解析。复测两级链得到真实地址 10.188.188.80，伪造的左侧地址未被采用。
+5. ExternalApiClients 下的 AllowedIpRanges 按站点和来源 IP 放行，不限制请求路径；AllowedSiteKeys 不再参与判断。未配置来源不能绕过审批。
+6. 可选企业口令已接入，错误口令拒绝；同时有 CSRF、设备/IP 限流、待审核队列上限和首次接触限流。
+7. 申请成功会产生通知事件和一次性激活回调；GET 只展示确认页，POST 才批准，链接不可重放。
+8. 只清 Cookie 时可通过一次性恢复凭据继续使用原设备授权，已连续清理两次复测；如果连站点存储一起清除，则按安全设计需要重新申请。业务系统自己的登录 Cookie 被清除后仍需重新登录业务系统。
+9. 上游 5xx 不依赖 GatewayDemo Application_Error，网关会单独写 ManagedReverseProxy.UpstreamError，日志包含 upstreamStatus；连接不上上游时写 ManagedReverseProxy.WriteBadGateway 并返回 502。
+10. 新增激活回调 Host 防污染：未配置 PublicBaseUrl 时，只接受站点配置中的 Host，未知 Host 不能把一次性令牌带到外部域名。
+
+本地独立 IIS、真实 Chromium、真实 HTTP 转发和 SQLite 持久化共完成 69 项检查，69 项通过；最终 ZIP 重新解包后又实际走了一遍“申请→后台批准→SPA 页面交互”，控制台无异常。
+
+关于“粘贴图片后选择人员报 500”：
+截图中的失败请求是上游 WebEnterprise 的 ExecService.ashx。网关现已确认会原样转发含 <img> 的表单正文，不做 HTML/JS 替换；上游返回 500 时会写 ManagedReverseProxy.UpstreamError，而不会进入网关 Application_Error。截图提示“检测到有潜在危险的 Request.Form 值”，更像上游 ASP.NET Request Validation 或该处理器读取 Request.Form 触发，属于客户端/业务站点处理链。请杜这边在具体处理器内核对，优先只对需要接收富文本的字段使用安全的未验证读取并继续做业务级 HTML 清洗，不建议全站关闭请求验证。当前机器无法连接 10.188.189.9:2024，请提供可达环境或该请求的 HAR、完整响应和上游服务日志后，我可以再做现场联调。
+
+关于静态文件的 Bad Gateway：
+复测中上游正常时静态 SPA、CSS、路由均为 200；实际停止上游站点后才返回 “Bad Gateway: upstream service is unavailable.”，启动后立即恢复。因此现场若再出现该提示，请同时检查对应站点 UpstreamBaseUrl、15053 监听、应用池/容器状态以及网关服务器到上游端口的连通性。
+
+还需要后台/客户端研发确认并提供：
+1. 系统消息接口：请提供 NotificationUrl、鉴权方式、成功状态码和重试/幂等约定。当前事件字段为 requestId、deviceCode、companyName、applicantName、callbackUrl、expiresAtUtc。
+2. 邮箱免人工审核：现有一次性回调能力可以直接承接，但自动发邮件仍需确认邮件接口或 SMTP 参数、申请邮箱字段来源、邮箱是否已验证、匹配范围是“企业+邮箱”还是全局邮箱、近一个月的起止规则，以及正式 Gateway.Activation.PublicBaseUrl。接口确认后再启用，避免误把激活链接发给未验证邮箱。
+3. 移动端请确认 DeviceImei（或约定的稳定设备号）在登录和后续接口中保持一致；网关已兼容后续字段缺失，但无法把客户端实际变化的两个设备号安全地强行视为同一设备。
+4. 若要复查编辑器问题，请提供可达测试地址、测试账号、复现页面、ExecService.ashx 请求 HAR 和上游同一时间点日志。
+
+部署提醒：请解压到新目录，迁移现场 gateway-sites.json、数据库和必要配置后切换 IIS 物理路径，不要直接覆盖运行目录。生产环境请配置 HTTPS、可信代理、正式 HostNames 和 Activation.PublicBaseUrl。

@@ -1,0 +1,499 @@
+这个项目不是普通的 API 网关，而是 **IIS + ASP.NET Framework 4.7.2 + System.Web + SQLite 的设备授权与反向代理网关**，还涉及多站点路由、配置热更新、浏览器设备 Cookie、移动端身份、外部 API IP 白名单、长轮询、流式响应、WebSocket 和上游代理。现有 solution 只有 Core、Web、Mock Backend 三个项目，没有独立测试项目，因此特别适合给 Codex 做一套仓库级测试 skills。
+
+## 我的核心建议
+
+**不要找一个“万能测试 skill”。**
+最适合这个项目的是：
+
+> 一个总调度 skill + 8 个专门 skill。
+
+因为你的奇怪 bug 往往出现在多个状态组合中，例如：
+
+* 同一路径在 Host、Referer、Cookie、RequestMatchPatterns 下被分配给不同站点；
+* 管理员刚撤销授权，但另一个 IIS Worker 仍使用旧缓存；
+* 上游返回 302、gzip、中文文件名、多个 Set-Cookie 或半截流；
+* `gateway-sites.json` 正好在请求期间写了一半；
+* 浏览器设备凭据、移动端 Session 和外部 API IP 白名单发生身份串用。
+
+这些不是普通单元测试能完整覆盖的。
+
+---
+
+# 推荐的 Codex skills
+
+| Skill 名称                      | 主要作用                                                     | 特别适合发现的问题                          |
+| ----------------------------- | -------------------------------------------------------- | ---------------------------------- |
+| `gateway-test-orchestrator`   | 构建、部署临时 IIS、启动 Mock Backend、重置 SQLite、运行其他测试并汇总报告        | 环境不一致、测试污染、无法复现                    |
+| `gateway-authz-state-machine` | 用状态机遍历设备创建、申请、批准、限制站点、撤销、重新申请等流程                         | 越权、撤销未生效、状态错乱、旧凭据复活                |
+| `gateway-routing-fuzzer`      | 随机组合 Host、端口、path、query、Referer、Cookie、编码方式和多站点配置        | 路由串站、开放重定向、无限重定向、路径绕过              |
+| `gateway-proxy-differential`  | 同一请求分别直连 Mock Backend 和经过网关，比较状态码、Header、Cookie、Body 和延迟 | 网关悄悄修改响应、下载损坏、Header 丢失            |
+| `gateway-sqlite-concurrency`  | 多线程、多进程、多 IIS Worker 并发创建、审批、撤销和写审计日志                    | database locked、重复设备、丢更新、死锁        |
+| `gateway-chaos-resilience`    | 模拟慢上游、断流、超时、RST、错误 gzip、半截 JSON、进程回收和磁盘异常                | 502/504 处理错误、资源泄漏、线程耗尽             |
+| `gateway-browser-e2e`         | 用 Playwright 创建多个隔离浏览器上下文，测试设备 Cookie、审批后台和真实页面加载        | 同 UA 串设备、Cookie 域错误、静态资源被重定向成 HTML |
+| `gateway-security-audit`      | CodeQL、依赖扫描、默认凭据检查、ZAP DAST、配置安全检查                       | XSS、CSRF、伪造代理头、IP 白名单绕过、弱配置        |
+| `gateway-config-mutator`      | 修改、截断、并发覆盖、加 BOM、重复键、错误类型和超长配置                           | 热更新崩溃、旧配置残留、错误站点被启用                |
+
+## 1. `gateway-test-orchestrator`
+
+这是最先应该做的。
+
+它不负责设计所有测试，而是统一完成：
+
+1. 编译 `GatewayDemo.Legacy.sln`。
+2. 创建一次性 IIS 网站和应用池。
+3. 为每次测试生成独立端口、SQLite 文件和配置文件。
+4. 启动 Mock Backend。
+5. 等待 `/healthz.ashx` 就绪。
+6. 运行测试套件。
+7. 收集 IIS 日志、应用 Trace、SQLite 快照、HTTP HAR 和失败请求。
+8. 测试结束后彻底清理。
+
+你的部署脚本已经能够创建网关和本机 mock 后端，这正适合作为 skill 的执行入口。
+
+Skill 应明确要求 Codex：
+
+* 不允许测试共享生产数据库；
+* 不允许对真实 ERP 执行破坏性测试；
+* 每次失败必须输出可重复执行的最小命令；
+* 不允许只报告“请求失败”，必须同时保留网关日志和上游日志。
+
+---
+
+## 2. `gateway-authz-state-machine`
+
+这是我认为**最重要**的一个。
+
+不要只写“批准后可以访问、撤销后不能访问”这种线性测试，而应把系统抽象成状态机：
+
+```text
+NewDevice
+  -> Challenged
+  -> RequestPending
+  -> ApprovedForSiteA
+  -> ApprovedForAllSites
+  -> SignalChanged
+  -> ChallengedAgain
+  -> Revoked
+  -> Reapplied
+```
+
+每一步随机穿插：
+
+* 普通浏览器请求；
+* JSON API 请求；
+* 静态资源请求；
+* 移动 APP 请求；
+* 外部 API 请求；
+* Site A 与 Site B；
+* 旧 Cookie、复制 Cookie、删除 Cookie；
+* IIS Worker 回收；
+* 数据库恢复；
+* 管理员重复点击批准或撤销。
+
+应始终验证以下不变量：
+
+* 未授权设备永远不能访问受保护业务接口；
+* Site A 授权不能访问 Site B；
+* 撤销一旦成功，所有后续新请求都不能继续使用旧授权；
+* 重复提交不会创建多个有效授权；
+* 设备信号变化触发复审时，不应保留原有受保护访问；
+* 管理员操作失败时，数据库不能处于“设备可信但授权不存在”的半完成状态。
+
+你的代码在批准、更新站点和撤销时会同时修改授权、设备状态、Session、APP Credential 和 replay nonce，因此非常适合状态机测试。
+
+---
+
+## 3. `gateway-routing-fuzzer`
+
+这是最容易挖出“稀奇古怪 bug”的 skill。
+
+你的站点解析不仅看 `/proxy/<site>/`，还会依次参考：
+
+* RequestMatchPatterns；
+* Referer；
+* EntryPath 前缀；
+* Host 和端口；
+* 上次访问站点 Cookie；
+* 根站点 fallback。
+
+因此应生成笛卡尔积或 property-based 测试：
+
+```text
+Host:
+erp.test
+erp.test:5050
+ERP.TEST
+127.0.0.1
+[::1]
+带尾点的域名
+
+Path:
+/proxy/a/
+/proxy/a/../b
+/proxy/a/%2e%2e/b
+/proxy/a/%252e%252e/b
+//proxy//a
+/PROXY/a
+/proxy/a/%2fadmin
+/Gateway/Default.aspx
+/Admin/Default.aspx
+
+Referer:
+无 Referer
+合法同源 Referer
+跨域 Referer
+伪造 Referer
+带不同端口 Referer
+
+Query:
+重复参数
+空参数
+超长参数
+编码斜杠
+Unicode
+NUL 编码
+```
+
+重点检查：
+
+* 一个请求最多只能命中一个站点；
+* 网关保留路径永远不能被业务站点接管；
+* 不产生 302 循环；
+* 双重编码不能绕过匿名路径规则；
+* Site A 的 Referer 不能把 Site B 路径路由到 A；
+* Host 通配和裸 IP 不会抢走其他端口；
+* Cookie fallback 不能越过显式 Host 映射；
+* `/proxy/site`、`/proxy/site/`、深链接与根路径行为一致。
+
+你之前已经修过 Referer 将网关自身路径重新判定为业务路径、造成无限重定向的问题；这类历史 bug 应加入固定回归语料库。代码注释中也记录了该失败链路。
+
+---
+
+## 4. `gateway-proxy-differential`
+
+这个非常适合网关项目，而且比普通接口断言强很多。
+
+做法是让 Mock Backend 提供大量可控响应，同一请求：
+
+```text
+客户端 -> Mock Backend
+客户端 -> Gateway -> Mock Backend
+```
+
+然后对比两边的“允许差异”和“非预期差异”。
+
+测试内容包括：
+
+* GET、HEAD、POST、PUT、PATCH、DELETE；
+* 空 Body、JSON、表单、multipart、二进制上传；
+* Content-Length 与 chunked；
+* gzip、deflate、未知 Content-Encoding；
+* 204、206、301、302、303、307、308、304；
+* 多个 Set-Cookie；
+* Cookie 的 Domain、Path、Secure、HttpOnly、SameSite；
+* 中文文件名和 `filename*`；
+* Range、ETag、Last-Modified；
+* SSE、长轮询、WebSocket；
+* UTF-8、GBK、无 charset、错误 charset；
+* 上游返回 404 后的 origin-root fallback。
+
+网关目前会重写 Location、Set-Cookie 和 Content-Disposition，并对 streaming 与普通响应采用不同处理，因此 differential test 很有价值。
+
+特别值得验证的一个假设是：
+
+> 分块传输或未知 Content-Length 的请求，是否能够绕过代码中的 100 MB 请求体限制。
+
+当前代码只在 `ContentLength > 100 MB` 时拒绝，然后直接复制整个输入流；这不代表已经确认存在漏洞，但非常值得单独构造 chunked 和无长度请求验证。
+
+---
+
+## 5. `gateway-sqlite-concurrency`
+
+这个项目不能只测“100 个 HTTP 并发”。需要分层：
+
+### 同进程并发
+
+* 多线程同时登记同一个浏览器 Token；
+* 同一设备同时发起多个申请；
+* 管理员同时批准和撤销；
+* 并发写 heartbeat 和 audit；
+* 一边查看后台快照，一边大量写入。
+
+### 跨进程并发
+
+* IIS Web Garden 多 Worker；
+* 两个独立进程连接同一 SQLite；
+* Worker A 审批，Worker B 读取缓存；
+* Worker A 正在事务中，Worker B 回收；
+* 两个 Worker 同时发现数据库文件消失并尝试自愈。
+
+你的 Repository 使用静态 `DatabaseWriteSyncRoot`、SQLite Busy/Locked 重试和数据库文件自动重建。静态锁只能协调当前 AppDomain 内的线程，因此多 Worker 和多进程必须专门测试，不能由普通线程并发代替。
+
+这个 skill 还应该在每轮测试后检查数据库不变量：
+
+```sql
+-- 示例思想
+每个 TokenHash 最多对应一个 DeviceId
+每个设备最多有一个当前有效 Credential
+Approved 授权必须关联存在的 Device
+已撤销设备不得残留 SessionKey
+所有外键引用都必须存在
+```
+
+不要只看 HTTP 是否返回 200。
+
+---
+
+## 6. `gateway-chaos-resilience`
+
+建议让 Codex 扩展 Mock Backend，支持通过请求参数决定异常行为：
+
+```text
+?fault=delay_headers
+?fault=delay_body
+?fault=close_after_headers
+?fault=close_half_body
+?fault=invalid_gzip
+?fault=infinite_redirect
+?fault=malformed_chunk
+?fault=status_504
+?fault=huge_headers
+?fault=slow_sse
+```
+
+测试：
+
+* 上游连接失败；
+* DNS 失败；
+* TLS 握手失败；
+* 连接后不发送 Header；
+* Header 已发送但 Body 卡住；
+* 返回一半后断开；
+* 慢速上传；
+* 慢速下载；
+* 重定向指向网关自己；
+* 404 fallback 的第一次和第二次请求行为；
+* IIS 在请求中回收；
+* SQLite 文件只读；
+* 磁盘空间不足；
+* 配置文件暂时不存在；
+* 上游恢复后网关是否自动恢复。
+
+当前普通请求默认超时约 100 秒，长轮询默认可到 30 分钟，并存在上游 404 后重试 origin root 的逻辑。
+
+需要测的不只是“有没有 502”，还包括：
+
+* 请求线程是否释放；
+* 后续请求是否还能正常处理；
+* SQLite 连接是否泄漏；
+* 内存是否持续上涨；
+* 客户端取消后是否仍持续读取上游；
+* streaming 是否被意外缓冲。
+
+---
+
+## 7. `gateway-browser-e2e`
+
+Playwright 很适合你的设备授权设计，因为每个 BrowserContext 都有隔离的 Cookie、localStorage 和 sessionStorage，还可以在一个测试中同时创建管理员和多个用户上下文。([Playwright][1])
+
+建议场景：
+
+* 两个相同 User-Agent 的上下文必须获得不同设备；
+* 同一 Context 刷新后设备保持一致；
+* 清除 Cookie 后成为新设备；
+* 同域不同端口的 Cookie 行为；
+* 不同子域共享与不共享 Cookie；
+* HTTP/HTTPS 切换；
+* `Secure`、`SameSite` 和 Domain 配置；
+* 浏览器小版本变化不触发误复审；
+  -平台信号变化按配置触发复审；
+* 未授权页面中的 JS/CSS 请求返回干净 403，而不是 302 到 HTML；
+* SPA 深链接刷新；
+* 管理后台登录、批准、驳回、撤销；
+* 页面过期后提交；
+* 管理员与普通用户同时操作。
+
+你的 README 明确包含浏览器随机凭据、设备信号归一化、Cookie Domain 和 Secure Policy 等逻辑，这部分只靠 curl 很难可靠验证。
+
+---
+
+## 8. `gateway-security-audit`
+
+建议拆成静态和动态两部分。
+
+### 静态扫描
+
+让 skill 统一运行：
+
+* CodeQL C#；
+* 依赖漏洞扫描；
+* Secret scanning；
+* 默认口令和危险配置扫描；
+* 自定义规则搜索：
+
+  * 未验证的 forwarded headers；
+  * HTML 输出未编码；
+  * SQL 动态拼接；
+  * 任意 URL 请求；
+  * Cookie 缺少安全属性；
+  * 不受限重定向；
+  * 弱随机数；
+  * 日志泄露 Token、Cookie、密码或 SessionKey。
+
+CodeQL 支持编译型语言分析、自定义查询以及 CI 集成，适合作为固定 PR 检查。([GitHub Docs][2])
+
+### 动态扫描
+
+使用 OWASP ZAP Automation Framework：
+
+* 未登录扫描；
+* 已登录管理后台扫描；
+* 授权设备扫描；
+* 未授权设备扫描；
+* API 模式扫描；
+* 输出 HTML/SARIF 报告；
+* 根据告警级别设置 CI 退出码。
+
+ZAP Automation Framework 可以用 YAML 定义认证、spider、被动扫描、主动扫描、报告与结果门槛。主动扫描只应该对本地 Mock 或专用测试环境执行。([ZAP][3])
+
+重点攻击面：
+
+* `X-Forwarded-For` 伪造；
+* 受信代理 CIDR 边界；
+* IPv4-mapped IPv6；
+* 外部 API 白名单绕过；
+* CORS 通配域和 credentials；
+* Host Header Injection；
+* CRLF/Header Injection；
+* path traversal 与双重编码；
+* 管理后台 CSRF；
+* Forms Auth session fixation；
+* 默认管理员凭据未替换；
+* Cookie Domain 过宽；
+* 上传超限和压缩炸弹；
+* 请求走私相关 Header 组合；
+* 日志注入。
+
+仓库中的默认管理员账号和默认密码是用于初次冒烟部署的，但 skill 应检查任何“生产配置/交付包”是否仍保留它，而不是简单把它当成普通字符串忽略。
+
+---
+
+## 9. `gateway-config-mutator`
+
+这是非常容易被忽略、但可能很高产的 skill。
+
+针对 `gateway-sites.json` 自动生成：
+
+* 空文件；
+* 写到一半的 JSON；
+* UTF-8 BOM；
+* GBK；
+* 单对象与数组切换；
+* 重复 Site Key；
+* 重复 Host；
+* Host 大小写差异；
+* 同 Host 不同端口；
+* 相互覆盖的 wildcard；
+* 空 `AllowedPathPatterns`；
+* `null`、数字、布尔值代替字符串；
+* 超长 EntryPath；
+* 相对 UpstreamBaseUrl；
+* Upstream 指向网关自己；
+* IPv6 URL；
+* 尾部斜杠组合；
+* PathRuleProfiles 循环或重复；
+* 配置在大量请求期间连续热更新。
+
+需要验证：
+
+* 错误配置不能使所有旧站点瞬间消失；
+* 读取半成品时不会覆盖上一份有效配置；
+* 修复配置后无需重启即可恢复；
+* 多线程不会看到不同的半份配置；
+* 自代理循环被拒绝；
+* 不同站点配置顺序不会改变确定性结果。
+
+项目明确支持 `gateway-sites.json` 热更新，并兼容单对象和数组，因此这里非常值得做 mutation testing。
+
+---
+
+# 压测工具怎么选
+
+建议让并发 skill 使用 **k6**，而不是让 Codex 自己用几十个 PowerShell 后台任务凑并发。
+
+k6 原生支持 HTTP/1.1、HTTP/2 和 WebSocket，并有 smoke、average-load、stress、soak、spike、breakpoint 等测试模式。([Grafana Labs][4])
+
+至少设计五组：
+
+| 类型     | 目的             |
+| ------ | -------------- |
+| Smoke  | 每次 PR 验证基本功能   |
+| Load   | 正常峰值吞吐与延迟      |
+| Spike  | 瞬时大量设备首次登记     |
+| Stress | 找数据库锁和线程池极限    |
+| Soak   | 长时间找连接、内存和句柄泄漏 |
+
+需要分别压：
+
+* 已授权纯代理请求；
+* 未授权静态资源；
+* 新设备首次登记；
+* heartbeat 写入；
+* 管理员审批；
+* 大文件上传下载；
+* 长轮询；
+* WebSocket；
+* 配置热更新期间请求；
+* 撤销授权期间请求。
+
+不要只压 `/healthz.ashx`，那基本测不到真实瓶颈。
+
+---
+
+# CI 中的合理分层
+
+## 每个 PR
+
+* 编译；
+* 单元测试；
+* 路由 property-based 测试；
+* 授权状态机短测试；
+* CodeQL；
+* Playwright 冒烟；
+* 小规模 differential test。
+
+## 每晚
+
+* ZAP 被动扫描；
+* 路由 fuzz 数千到数万用例；
+* 100–500 并发；
+* 多站点配置 mutation；
+* 数据库删除和自动恢复；
+* WebSocket、SSE、长轮询。
+
+## 每周或发布前
+
+* IIS 多 Worker；
+* 30–60 分钟 soak；
+* 上游故障注入；
+* Worker recycle；
+* SQLite 文件锁、只读、残留 WAL/SHM；
+* 大文件和超长 URL；
+* 全量 ZAP 主动扫描；
+* 真实浏览器 Chromium、Firefox、WebKit 回归。
+
+---
+
+# 推荐落地优先级
+
+我会按这个顺序做：
+
+1. `gateway-test-orchestrator`
+2. `gateway-authz-state-machine`
+3. `gateway-routing-fuzzer`
+4. `gateway-sqlite-concurrency`
+5. `gateway-proxy-differential`
+6. `gateway-browser-e2e`
+7. `gateway-chaos-resilience`
+8. `gateway-security-audit`
+9. `gateway-config-mutator`

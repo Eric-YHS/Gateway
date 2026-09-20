@@ -1,0 +1,57 @@
+# Legacy Gateway - Windows Containers
+# Requires: Docker Desktop switched to Windows containers mode
+#
+# Prerequisites:
+#   1. Right-click Docker Desktop tray icon -> "Switch to Windows containers..."
+#   2. Wait for Docker to restart in Windows mode
+#
+# Build and run:
+#   docker compose -f docker-compose.legacy.yml up --build
+#
+# Stop:
+#   docker compose -f docker-compose.legacy.yml down
+#
+# Access:
+#   Gateway public:   http://localhost:5050/gateway
+#   Gateway admin:    http://localhost:5051/admin (gateway-admin / GatewayDemo!2026)
+#   Mock backend:     http://localhost:5055/mock/erp-main/portal
+#
+# Connect to local demo site instead of mock backend:
+#   1. Copy docker-sites config with your demo URL:
+#      copy /Y src\GatewayDemo.Legacy.Web\App_Data\gateway-sites.docker.template.json ^
+#           src\GatewayDemo.Legacy.Web\App_Data\gateway-sites.json
+#   2. Edit gateway-sites.json, replace {{DemoBaseUrl}} with your demo URL
+#   3. Rebuild: docker compose -f docker-compose.legacy.yml up --build
+
+services:
+  gateway:
+    build:
+      context: ./src/GatewayDemo.Legacy.Web
+      dockerfile: Dockerfile
+    ports:
+      - "5050:80"
+      - "127.0.0.1:5051:8081"
+    volumes:
+      - gateway-data:C:\inetpub\wwwroot\App_Data
+    depends_on:
+      - mock-backend
+    networks:
+      - edge
+      - backend
+
+  mock-backend:
+    build:
+      context: ./src/MockBusinessBackend.Legacy.Web
+      dockerfile: Dockerfile
+    expose:
+      - "80"
+    networks:
+      - backend
+
+volumes:
+  gateway-data:
+
+networks:
+  edge:
+  backend:
+    internal: true

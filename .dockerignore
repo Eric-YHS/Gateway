@@ -1,0 +1,11 @@
+node_modules
+npm-debug.log
+.git
+.gitignore
+README.md
+1.png
+2.png
+对话.md
+**/bin
+**/obj
+src/GatewayDemo/App_Data
