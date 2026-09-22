@@ -1,0 +1,36 @@
+# 构建产物
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.suo
+*.userprefs
+*.pdb
+*.cache
+TestResults/
+
+# Visual Studio / Rider / VS Code
+.vs/
+.vscode/
+.idea/
+*.vcxproj.user
+
+# 本地运行数据与日志（App_Data 里的站点清单要入库，数据库文件不入库）
+src/GatewayDemo.Legacy.Web/App_Data/*.db
+src/GatewayDemo.Legacy.Web/App_Data/*.sqlite
+src/GatewayDemo.Legacy.Web/App_Data/*.db-shm
+src/GatewayDemo.Legacy.Web/App_Data/*.db-wal
+src/GatewayDemo.Legacy.Web/App_Data/logs/
+*.log
+
+# 部署包与临时目录
+publish/
+artifacts/
+*.zip
+*.7z
+
+# 系统文件
+Thumbs.db
+Desktop.ini
+.DS_Store
