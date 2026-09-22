@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  # .NET Framework 4.7.2 只能在 Windows Runner 上编译；这是本仓库最有效的门禁：
+  # 网关的站点归属、路径规则、授权逻辑都靠编译器保证不出现签名/引用错误。
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build solution (Release)
+        run: msbuild GatewayDemo.Legacy.sln /t:Build /p:Configuration=Release /p:Platform="Any CPU" /nologo /v:minimal
+
+      # bin/ 已从版本库移除（编译产物），改为按需下载构件，避免把 DLL 当源码维护。
+      - name: Upload build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: gateway-legacy-release
+          path: |
+            src/GatewayDemo.Legacy.Core/bin/
+            src/GatewayDemo.Legacy.Web/bin/
+            src/MockBusinessBackend.Legacy.Web/bin/
+          if-no-files-found: warn
+          retention-days: 14
+
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 部署脚本是现场唯一的部署入口，语法错误必须在到客户机器之前暴露。
+      - name: Parse deployment PowerShell scripts
+        shell: pwsh
+        run: |
+          $fail = $false
+          Get-ChildItem -Path scripts -Recurse -Filter *.ps1 | ForEach-Object {
+            $errors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$null, [ref]$errors)
+            if ($errors) {
+              $fail = $true
+              Write-Host "::error file=$($_.Path)::[$($_.Name)] 解析失败"
+              $errors | ForEach-Object { Write-Host ("  line {0}: {1}" -f $_.Extent.StartLineNumber, $_.Message) }
+            } else {
+              Write-Host "ok $($_.Name)"
+            }
+          }
+          if ($fail) { exit 1 }
+
+      # gateway-sites.json 支持热更新，写坏会让所有站点同时不可用。
+      - name: Validate site manifest JSON
+        shell: pwsh
+        run: |
+          Get-ChildItem -Path src -Recurse -Filter gateway-sites.json | ForEach-Object {
+            $null = Get-Content $_.FullName -Raw | ConvertFrom-Json
+            Write-Host "ok $($_.Name)"
+          }
+
+      - name: Fail on leftover build outputs in git
+        run: |
+          bad=$(git ls-files -- '*/bin/*' '*/obj/*' '*.user' '*.suo')
+          if [ -n "$bad" ]; then
+            echo "编译产物不应入库，请 git rm --cached："
+            echo "$bad"
+            exit 1
+          fi
+          echo "ok: 无编译产物入库"
